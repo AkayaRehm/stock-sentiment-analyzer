@@ -43,11 +43,35 @@
       document.getElementById('socialSentiment').innerText = 'Loading...';
       document.getElementById('confidenceBadge').innerHTML = '';
 
-      // Placeholder examples — we’ll add real data sources next
-      document.getElementById('premarketData').innerText = `Example: ${ticker} is up 5% in premarket with 2x volume.`;
-      document.getElementById('newsList').innerHTML = `<li>${ticker} lands major contract with Tesla.</li><li>${ticker} upgraded by analyst to "Buy".</li>`;
-      document.getElementById('socialSentiment').innerText = `Overall positive sentiment across Twitter and Reddit.`;
-      document.getElementById('confidenceBadge').innerHTML = `<span class="bg-green-500 text-white px-3 py-1 rounded-full">High Confidence Play</span>`;
+      // === Premarket Data ===
+      try {
+        const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?range=1d&interval=1m&includePrePost=true`);
+        const data = await response.json();
+
+        const result = data.chart.result[0];
+        const meta = result.meta;
+
+        const preMarketPrice = meta.regularMarketPrice;
+        const previousClose = meta.chartPreviousClose;
+        const volume = meta.regularMarketVolume;
+
+        const change = preMarketPrice - previousClose;
+        const percentChange = ((change / previousClose) * 100).toFixed(2);
+
+        const premarketSummary = `${ticker} is ${change >= 0 ? 'up' : 'down'} ${percentChange}% in premarket with volume: ${volume.toLocaleString()}`;
+        document.getElementById('premarketData').innerText = premarketSummary;
+
+        // === Confidence Scoring (basic for now) ===
+        const confidence = percentChange >= 5 ? 'High Confidence Play' : percentChange >= 2 ? 'Watchlist' : 'Avoid Today';
+        const badgeColor = percentChange >= 5 ? 'green' : percentChange >= 2 ? 'yellow' : 'red';
+        document.getElementById('confidenceBadge').innerHTML = `<span class="bg-${badgeColor}-500 text-white px-3 py-1 rounded-full">${confidence}</span>`;
+      } catch (err) {
+        document.getElementById('premarketData').innerText = 'Failed to fetch premarket data.';
+      }
+
+      // === Placeholder News & Social Sentiment ===
+      document.getElementById('newsList').innerHTML = `<li>Live news coming next step...</li>`;
+      document.getElementById('socialSentiment').innerText = `Reddit/Twitter analysis coming soon.`;
     }
   </script>
 </body>
