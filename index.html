@@ -1,86 +1,51 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Stock Sentiment Analyzer</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
-  <h1 class="text-3xl font-bold mb-4">Stock Sentiment Analyzer</h1>
+<script>
+  async function analyzeTicker() {
+    const ticker = document.getElementById('tickerInput').value.trim().toUpperCase();
+    if (!ticker) return alert("Please enter a ticker symbol.");
 
-  <input id="tickerInput" type="text" placeholder="Enter Stock Ticker (e.g. CEI)" class="p-2 border border-gray-300 rounded w-64 text-center mb-4" />
-  <button onclick="analyzeTicker()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Analyze</button>
+    document.getElementById('result').classList.remove('hidden');
+    document.getElementById('tickerSymbol').innerText = ticker;
+    document.getElementById('premarketData').innerText = 'Loading...';
+    document.getElementById('newsList').innerHTML = '';
+    document.getElementById('socialSentiment').innerText = 'Loading...';
+    document.getElementById('confidenceBadge').innerHTML = '';
 
-  <div id="result" class="mt-6 w-full max-w-2xl bg-white shadow-md rounded p-4 hidden">
-    <h2 class="text-xl font-semibold mb-2">Analysis for <span id="tickerSymbol"></span></h2>
-    <div id="confidenceBadge" class="mb-4"></div>
-    <div class="space-y-4">
-      <div>
-        <h3 class="font-semibold">Premarket Data</h3>
-        <p id="premarketData">Loading...</p>
-      </div>
-      <div>
-        <h3 class="font-semibold">Latest News</h3>
-        <ul id="newsList" class="list-disc pl-5"></ul>
-      </div>
-      <div>
-        <h3 class="font-semibold">Social Buzz</h3>
-        <p id="socialSentiment">Loading...</p>
-      </div>
-    </div>
-  </div>
+    // === Pull Live Price Data from Twelve Data ===
+    try {
+      const apiKey = 'f6a50a1590314ee4bd78e07227ac4bdd';
+      const url = `https://api.twelvedata.com/quote?symbol=${ticker}&apikey=${apiKey}`;
+      const response = await fetch(url);
+      const data = await response.json();
 
-  <script>
-    async function analyzeTicker() {
-      const ticker = document.getElementById('tickerInput').value.trim().toUpperCase();
-      if (!ticker) return alert("Please enter a ticker symbol.");
+      if (data.code) throw new Error(data.message);
 
-      document.getElementById('result').classList.remove('hidden');
-      document.getElementById('tickerSymbol').innerText = ticker;
-      document.getElementById('premarketData').innerText = 'Loading...';
-      document.getElementById('newsList').innerHTML = '';
-      document.getElementById('socialSentiment').innerText = 'Loading...';
-      document.getElementById('confidenceBadge').innerHTML = '';
+      const price = parseFloat(data.close);
+      const previousClose = parseFloat(data.previous_close);
+      const volume = parseInt(data.volume.replace(/,/g, ''));
 
-      // === Pull Live Price Data from Twelve Data ===
-      try {
-        const apiKey = 'f6a50a1590314ee4bd78e07227ac4bdd';
-        const url = `https://api.twelvedata.com/quote?symbol=${ticker}&apikey=${apiKey}`;
-        const response = await fetch(url);
-        const data = await response.json();
+      const change = price - previousClose;
+      const percentChange = ((change / previousClose) * 100).toFixed(2);
 
-        if (data.code) throw new Error(data.message);
+      const summary = `${ticker} is ${change >= 0 ? 'up' : 'down'} ${percentChange}% with volume: ${volume.toLocaleString()}`;
+      document.getElementById('premarketData').innerText = summary;
 
-        const price = parseFloat(data.price);
-        const previousClose = parseFloat(data.previous_close);
-        const volume = parseInt(data.volume);
+      // === Confidence Scoring ===
+      const confidence = percentChange >= 5 ? 'High Confidence Play'
+                        : percentChange >= 2 ? 'Watchlist'
+                        : 'Avoid Today';
+      const badgeColor = percentChange >= 5 ? 'green'
+                        : percentChange >= 2 ? 'yellow'
+                        : 'red';
 
-        const change = price - previousClose;
-        const percentChange = ((change / previousClose) * 100).toFixed(2);
-
-        const summary = `${ticker} is ${change >= 0 ? 'up' : 'down'} ${percentChange}% in premarket with volume: ${volume.toLocaleString()}`;
-        document.getElementById('premarketData').innerText = summary;
-
-        // === Confidence Scoring ===
-        const confidence = percentChange >= 5 ? 'High Confidence Play'
-                          : percentChange >= 2 ? 'Watchlist'
-                          : 'Avoid Today';
-        const badgeColor = percentChange >= 5 ? 'green'
-                          : percentChange >= 2 ? 'yellow'
-                          : 'red';
-
-        document.getElementById('confidenceBadge').innerHTML =
-          `<span class="bg-${badgeColor}-500 text-white px-3 py-1 rounded-full">${confidence}</span>`;
-      } catch (err) {
-        console.error(err);
-        document.getElementById('premarketData').innerText = 'Failed to fetch premarket data.';
-      }
-
-      // === Placeholder News & Social Buzz ===
-      document.getElementById('newsList').innerHTML = `<li>Live news coming next step...</li>`;
-      document.getElementById('socialSentiment').innerText = `Reddit/Twitter analysis coming soon.`;
+      document.getElementById('confidenceBadge').innerHTML =
+        `<span class="bg-${badgeColor}-500 text-white px-3 py-1 rounded-full">${confidence}</span>`;
+    } catch (err) {
+      console.error('[Premarket Error]', err);
+      document.getElementById('premarketData').innerText = 'Failed to fetch premarket data.';
     }
-  </script>
-</body>
-</html>
+
+    // === Placeholder News & Social Buzz ===
+    document.getElementById('newsList').innerHTML = `<li>Live news coming next step...</li>`;
+    document.getElementById('socialSentiment').innerText = `Reddit/Twitter analysis coming soon.`;
+  }
+</script>
