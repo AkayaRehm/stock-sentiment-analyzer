@@ -10,10 +10,10 @@
     document.getElementById('socialSentiment').innerText = 'Loading...';
     document.getElementById('confidenceBadge').innerHTML = '';
 
-    // === Pull Live Price Data from Twelve Data ===
     try {
       const apiKey = 'f6a50a1590314ee4bd78e07227ac4bdd';
-      const url = `https://api.twelvedata.com/quote?symbol=${ticker}&apikey=${apiKey}`;
+      const proxy = 'https://corsproxy.io/?';
+      const url = `${proxy}${encodeURIComponent(`https://api.twelvedata.com/quote?symbol=${ticker}&apikey=${apiKey}`)}`;
       const response = await fetch(url);
       const data = await response.json();
 
@@ -29,7 +29,6 @@
       const summary = `${ticker} is ${change >= 0 ? 'up' : 'down'} ${percentChange}% with volume: ${volume.toLocaleString()}`;
       document.getElementById('premarketData').innerText = summary;
 
-      // === Confidence Scoring ===
       const confidence = percentChange >= 5 ? 'High Confidence Play'
                         : percentChange >= 2 ? 'Watchlist'
                         : 'Avoid Today';
@@ -44,7 +43,6 @@
       document.getElementById('premarketData').innerText = 'Failed to fetch premarket data.';
     }
 
-    // === Placeholder News & Social Buzz ===
     document.getElementById('newsList').innerHTML = `<li>Live news coming next step...</li>`;
     document.getElementById('socialSentiment').innerText = `Reddit/Twitter analysis coming soon.`;
   }
