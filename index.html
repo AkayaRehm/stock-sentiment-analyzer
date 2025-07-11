@@ -43,36 +43,41 @@
       document.getElementById('socialSentiment').innerText = 'Loading...';
       document.getElementById('confidenceBadge').innerHTML = '';
 
-      // === Premarket Data via Yahoo (with CORS Proxy) ===
+      // === Pull Live Price Data from Twelve Data ===
       try {
-        const yahooURL = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?range=1d&interval=1m&includePrePost=true`;
-        const proxyURL = `https://corsproxy.io/?${encodeURIComponent(yahooURL)}`;
-        const response = await fetch(proxyURL);
+        const apiKey = 'f6a50a1590314ee4bd78e07227ac4bdd';
+        const url = `https://api.twelvedata.com/quote?symbol=${ticker}&apikey=${apiKey}`;
+        const response = await fetch(url);
         const data = await response.json();
 
-        const result = data.chart.result[0];
-        const meta = result.meta;
+        if (data.code) throw new Error(data.message);
 
-        const preMarketPrice = meta.regularMarketPrice;
-        const previousClose = meta.chartPreviousClose;
-        const volume = meta.regularMarketVolume;
+        const price = parseFloat(data.price);
+        const previousClose = parseFloat(data.previous_close);
+        const volume = parseInt(data.volume);
 
-        const change = preMarketPrice - previousClose;
+        const change = price - previousClose;
         const percentChange = ((change / previousClose) * 100).toFixed(2);
 
-        const premarketSummary = `${ticker} is ${change >= 0 ? 'up' : 'down'} ${percentChange}% in premarket with volume: ${volume.toLocaleString()}`;
-        document.getElementById('premarketData').innerText = premarketSummary;
+        const summary = `${ticker} is ${change >= 0 ? 'up' : 'down'} ${percentChange}% in premarket with volume: ${volume.toLocaleString()}`;
+        document.getElementById('premarketData').innerText = summary;
 
-        // === Confidence Scoring (basic) ===
-        const confidence = percentChange >= 5 ? 'High Confidence Play' : percentChange >= 2 ? 'Watchlist' : 'Avoid Today';
-        const badgeColor = percentChange >= 5 ? 'green' : percentChange >= 2 ? 'yellow' : 'red';
-        document.getElementById('confidenceBadge').innerHTML = `<span class="bg-${badgeColor}-500 text-white px-3 py-1 rounded-full">${confidence}</span>`;
+        // === Confidence Scoring ===
+        const confidence = percentChange >= 5 ? 'High Confidence Play'
+                          : percentChange >= 2 ? 'Watchlist'
+                          : 'Avoid Today';
+        const badgeColor = percentChange >= 5 ? 'green'
+                          : percentChange >= 2 ? 'yellow'
+                          : 'red';
+
+        document.getElementById('confidenceBadge').innerHTML =
+          `<span class="bg-${badgeColor}-500 text-white px-3 py-1 rounded-full">${confidence}</span>`;
       } catch (err) {
         console.error(err);
         document.getElementById('premarketData').innerText = 'Failed to fetch premarket data.';
       }
 
-      // === Placeholder News & Social Sentiment ===
+      // === Placeholder News & Social Buzz ===
       document.getElementById('newsList').innerHTML = `<li>Live news coming next step...</li>`;
       document.getElementById('socialSentiment').innerText = `Reddit/Twitter analysis coming soon.`;
     }
