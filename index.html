@@ -1,57 +1,86 @@
-<script>
-  async function analyzeTicker() {
-    const ticker = document.getElementById('tickerInput').value.trim().toUpperCase();
-    if (!ticker) return alert("Please enter a ticker symbol.");
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stock Sentiment Analyzer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
+  <h1 class="text-3xl font-bold mb-4">Stock Sentiment Analyzer</h1>
 
-    document.getElementById('result').classList.remove('hidden');
-    document.getElementById('tickerSymbol').innerText = ticker;
-    document.getElementById('premarketData').innerText = 'Loading...';
-    document.getElementById('newsList').innerHTML = '';
-    document.getElementById('socialSentiment').innerText = 'Loading...';
-    document.getElementById('confidenceBadge').innerHTML = '';
+  <input id="tickerInput" type="text" placeholder="Enter Stock Ticker (e.g. TSLA)" class="p-2 border border-gray-300 rounded w-64 text-center mb-4" />
+  <button onclick="analyzeTicker()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Analyze</button>
 
-    try {
-      const apiKey = 'FxKxKNphzgp1LPElyEW1v2d2p3m_c0Lg';
-      const url = `https://api.polygon.io/v2/aggs/ticker/${ticker}/prev?adjusted=true&apiKey=${apiKey}`;
-      const response = await fetch(url);
-      const data = await response.json();
+  <div id="result" class="mt-6 w-full max-w-2xl bg-white shadow-md rounded p-4 hidden">
+    <h2 class="text-xl font-semibold mb-2">Analysis for <span id="tickerSymbol"></span></h2>
+    <div id="confidenceBadge" class="mb-4"></div>
+    <div class="space-y-4">
+      <div>
+        <h3 class="font-semibold">Premarket Data</h3>
+        <p id="premarketData">Loading...</p>
+      </div>
+      <div>
+        <h3 class="font-semibold">Latest News</h3>
+        <ul id="newsList" class="list-disc pl-5">
+          <li>Live news coming next step...</li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="font-semibold">Social Buzz</h3>
+        <p id="socialSentiment">Reddit/Twitter analysis coming soon.</p>
+      </div>
+    </div>
+  </div>
 
-      if (!data || !data.results || !data.results[0]) throw new Error("No premarket data available.");
+  <script>
+    async function analyzeTicker() {
+      const ticker = document.getElementById('tickerInput').value.trim().toUpperCase();
+      if (!ticker) return alert("Please enter a ticker symbol.");
 
-      const result = data.results[0];
-      const close = result.c;
-      const volume = result.v;
-      const open = result.o;
+      document.getElementById('result').classList.remove('hidden');
+      document.getElementById('tickerSymbol').innerText = ticker;
+      document.getElementById('premarketData').innerText = 'Loading...';
+      document.getElementById('confidenceBadge').innerHTML = '';
 
-      const change = close - open;
-      const percentChange = ((change / open) * 100).toFixed(2);
+      try {
+        const apiKey = 'FxKxKNphzgp1LPElyEW1v2d2p3m_c0Lg';
+        const url = `https://api.polygon.io/v2/aggs/ticker/${ticker}/prev?adjusted=true&apiKey=${apiKey}`;
+        const response = await fetch(url);
+        const data = await response.json();
 
-      const summary = `${ticker} is ${change >= 0 ? 'up' : 'down'} ${percentChange}% with volume: ${volume.toLocaleString()}`;
-      document.getElementById('premarketData').innerText = summary;
+        if (!data.results || !data.results[0]) throw new Error("No results found");
 
-      // Safe fixed badge class logic
-      let confidence = '';
-      let badgeClass = '';
-      if (percentChange >= 5) {
-        confidence = 'High Confidence Play';
-        badgeClass = 'bg-green-500';
-      } else if (percentChange >= 2) {
-        confidence = 'Watchlist';
-        badgeClass = 'bg-yellow-500';
-      } else {
-        confidence = 'Avoid Today';
-        badgeClass = 'bg-red-500';
+        const result = data.results[0];
+        const open = result.o;
+        const close = result.c;
+        const volume = result.v;
+
+        const change = close - open;
+        const percentChange = ((change / open) * 100).toFixed(2);
+        const summary = `${ticker} is ${change >= 0 ? 'up' : 'down'} ${percentChange}% with volume: ${volume.toLocaleString()}`;
+        document.getElementById('premarketData').innerText = summary;
+
+        let confidence = '';
+        let badgeClass = '';
+        if (percentChange >= 5) {
+          confidence = 'High Confidence Play';
+          badgeClass = 'bg-green-500';
+        } else if (percentChange >= 2) {
+          confidence = 'Watchlist';
+          badgeClass = 'bg-yellow-500';
+        } else {
+          confidence = 'Avoid Today';
+          badgeClass = 'bg-red-500';
+        }
+
+        document.getElementById('confidenceBadge').innerHTML =
+          `<span class="${badgeClass} text-white px-3 py-1 rounded-full">${confidence}</span>`;
+      } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('premarketData').innerText = 'Failed to fetch premarket data.';
       }
-
-      document.getElementById('confidenceBadge').innerHTML =
-        `<span class="${badgeClass} text-white px-3 py-1 rounded-full">${confidence}</span>`;
-    } catch (err) {
-      console.error('[Polygon API Error]', err);
-      document.getElementById('premarketData').innerText = 'Failed to fetch premarket data.';
     }
-
-    document.getElementById('newsList').innerHTML = `<li>Live news coming next step...</li>`;
-    document.getElementById('socialSentiment').innerText = `Reddit/Twitter analysis coming soon.`;
-  }
-</script>
-
+  </script>
+</body>
+</html>
